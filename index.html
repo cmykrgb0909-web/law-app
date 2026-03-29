@@ -10,26 +10,42 @@
     <style>
         :root { --red: #8b1a1a; --bg: #f5f0e8; --border: #c8bfb0; --gold: #b8860b; }
         body { font-family: 'Noto Sans TC', sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .hdr { background: var(--red); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 100; }
-        .hbtn { background: white; color: var(--red); border: none; padding: 6px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; margin-left: 8px; font-size: 13px; }
+        
+        /* 頂部導覽列 */
+        .hdr { background: var(--red); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 100; }
+        .hbtn { background: white; color: var(--red); border: none; padding: 6px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; margin-left: 8px; font-size: 13px; transition: 0.3s; }
+        .hbtn:hover { background: #eee; }
+        
         .layout { display: flex; flex: 1; overflow: hidden; }
-        .sb { width: 220px; background: #ede7d9; border-right: 1px solid var(--border); overflow-y: auto; padding: 10px; }
-        .main { flex: 1; overflow-y: auto; padding: 25px; background: #fffdfa; scroll-behavior: smooth; }
-        .art-card { background: white; padding: 18px; margin-bottom: 25px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); line-height: 1.8; }
-        .art-num { color: var(--red); font-weight: bold; font-size: 1.2em; border-bottom: 2px solid var(--bg); display: block; margin-bottom: 12px; padding-bottom: 5px; }
-        .note-box { margin-top: 15px; padding: 10px; background: #fff9f0; border: 1px dashed var(--gold); border-radius: 6px; }
-        .note-input { width: 100%; min-height: 80px; border: 1px solid #e0d0b0; background: white; padding: 8px; font-size: 14px; box-sizing: border-box; border-radius: 4px; resize: vertical; }
-        .sb-item { padding: 12px; background: white; margin-bottom: 8px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); text-align: center; }
-        .sb-item:hover { background: var(--red); color: white; }
+        
+        /* 側邊欄 */
+        .sb { width: 240px; background: #ede7d9; border-right: 1px solid var(--border); overflow-y: auto; padding: 15px; }
+        .search-box { padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 14px; }
+        .sb-item { padding: 12px; background: white; margin-bottom: 10px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); text-align: center; font-weight: 500; transition: 0.2s; }
+        .sb-item:hover { background: var(--red); color: white; transform: translateY(-2px); }
+
+        /* 主內容區：強化排版 */
+        .main { flex: 1; overflow-y: auto; padding: 30px; background: #fffdfa; scroll-behavior: smooth; }
+        .art-card { background: white; padding: 25px; margin-bottom: 30px; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .art-num { color: var(--red); font-weight: bold; font-size: 1.3em; border-left: 5px solid var(--red); padding-left: 15px; margin-bottom: 15px; display: block; }
+        
+        /* 法條內容：保留換行與間距 */
+        .art-content { font-size: 17px; line-height: 2.2; color: #222; white-space: pre-wrap; word-break: break-all; margin-bottom: 25px; padding: 0 5px; }
+        
+        /* 筆記區塊：視覺強化 */
+        .note-box { background: #fff9f0; border: 1px solid var(--gold); border-radius: 8px; padding: 15px; margin-top: 20px; }
+        .note-label { font-size: 13px; color: var(--gold); font-weight: bold; display: flex; align-items: center; margin-bottom: 8px; }
+        .note-input { width: 100%; min-height: 120px; border: 1px solid #e0d0b0; background: white; padding: 12px; font-size: 15px; box-sizing: border-box; border-radius: 6px; resize: vertical; line-height: 1.6; }
+
         #loader { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; font-weight: bold; color: var(--red); }
     </style>
 </head>
 <body>
 
-<div id="loader">正在清洗法規格式...</div>
+<div id="loader">正在優化排版與清洗格式...</div>
 
 <div class="hdr">
-    <b>學習式六法</b>
+    <div style="font-size: 20px; font-weight: bold;">學習式六法 <small style="font-size: 11px; opacity: 0.8;">專業備考版</small></div>
     <div>
         <button class="hbtn" onclick="document.getElementById('fi').click()">匯入 RTF</button>
         <input type="file" id="fi" style="display:none" onchange="handleFile(event)">
@@ -38,8 +54,16 @@
 </div>
 
 <div class="layout">
-    <div class="sb" id="sbl">尚未匯入</div>
-    <div class="main" id="mv">請匯入 RTF 檔案開始學習。</div>
+    <div class="sb" id="sidebar">
+        <input type="text" class="search-box" placeholder="搜尋已匯入法規..." oninput="renderSB(this.value)">
+        <div id="sbl">尚未匯入</div>
+    </div>
+    <div class="main" id="mv">
+        <div style="text-align:center; margin-top:150px; color:#aaa;">
+            <h2 style="color:#666;">開始您的法律學習之旅</h2>
+            <p>請點擊右上方「匯入 RTF」或「Google 登入」同步您的筆記。</p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -71,23 +95,33 @@
         const reader = new FileReader();
         reader.onload = async (ev) => {
             let t = ev.target.result;
-            // 1. 處理 Unicode
-            t = t.replace(/\\u(-?\d+)\??/g, (_, n) => String.fromCharCode(parseInt(n) < 0 ? parseInt(n)+65536 : n));
-            // 2. 深度清洗 RTF 標籤與 d-xxx 亂碼
-            t = t.replace(/\\par|\\line/g, '\n')
+            
+            // 1. 處理 Unicode 與基礎清洗
+            t = t.replace(/\\u(-?\d+)\??/g, (_, n) => String.fromCharCode(parseInt(n) < 0 ? parseInt(n)+65536 : n))
+                 .replace(/\\par|\\line/g, '\n')
                  .replace(/\\[a-z0-9-]+ ?/g, '') 
-                 .replace(/d-\d[\d-]*\d/g, '') // 刪除 d-400 類符號
-                 .replace(/d\d+ ?/g, '')       // 刪除 d1, d2 類符號
+                 .replace(/d-\d[\d-]*\d/g, '')   
+                 .replace(/d\d+ ?/g, '')         
                  .replace(/[{}\\]/g, '');
 
             const name = file.name.replace(/\.[^.]+$/, '');
             const arts = [];
+            
+            // 2. 深度排版邏輯：偵測條文中的項目標號
             t.split('\n').forEach(line => {
-                const ln = line.trim();
+                let ln = line.trim();
+                if (!ln) return;
+
+                // 在 1. 2. 或 1、 2、 等數字標號前強制加上換行符號
+                ln = ln.replace(/([一二三四五六七八九十]、)/g, '\n$1')
+                       .replace(/(\d+[\.、])\s?/g, '\n$1 ');
+
                 const m = ln.match(/^第\s*(\d[\d-]*(?:之[一二三四五六七八九十百千\d]+)?)\s*條\s*(.*)?/);
-                if (m) arts.push({ n: m[1], c: m[2] || "" });
-                else if (arts.length > 0 && ln.length > 0 && !ln.startsWith('d')) {
-                    arts[arts.length - 1].c += ln;
+                if (m) {
+                    arts.push({ n: m[1], c: (m[2] || "").trim() });
+                } else if (arts.length > 0) {
+                    // 將後續內容併入，並保留自動產生的換行
+                    arts[arts.length - 1].c += '\n' + ln;
                 }
             });
 
@@ -100,25 +134,30 @@
         reader.readAsText(file, 'latin1');
     }
 
-    function renderSB() {
-        document.getElementById('sbl').innerHTML = Object.keys(LAWS).map(k => `<div class="sb-item" onclick="showLaw('${k}')">📂 ${k}</div>`).join('');
+    function renderSB(filter = "") {
+        const keys = Object.keys(LAWS).filter(k => k.includes(filter));
+        document.getElementById('sbl').innerHTML = keys.map(k => `<div class="sb-item" onclick="showLaw('${k}')">📂 ${k}</div>`).join('');
     }
 
     function showLaw(name) {
         const law = LAWS[name];
-        let h = `<h2 style="color:var(--red); border-bottom:3px solid var(--red); padding-bottom:10px;">${law.name}</h2>`;
+        let h = `<h1 style="color:var(--red); text-align:center; border-bottom:2px solid var(--red); padding-bottom:15px; margin-bottom:40px;">${law.name}</h1>`;
+        
         law.arts.forEach(a => {
             const nid = `${name}_${a.n}`;
-            h += `<div class="art-card">
-                <span class="art-num">第 ${a.n} 條</span>
-                <p style="color:#333;">${a.c}</p>
-                <div class="note-box">
-                    <label style="font-size:12px; color:var(--gold); font-weight:bold;">📓 我的筆記：</label>
-                    <textarea class="note-input" placeholder="在此輸入重點..." onblur="saveNote('${nid}', this.value)">${NOTES[nid] || ""}</textarea>
-                </div>
-            </div>`;
+            h += `
+                <div class="art-card">
+                    <span class="art-num">第 ${a.n} 條</span>
+                    <div class="art-content">${a.c.trim()}</div>
+                    <div class="note-box">
+                        <label class="note-label">📓 學習筆記 / 關鍵字記憶：</label>
+                        <textarea class="note-input" placeholder="在此輸入您的筆記、口訣或重點..." onblur="saveNote('${nid}', this.value)">${NOTES[nid] || ""}</textarea>
+                    </div>
+                </div>`;
         });
-        document.getElementById('mv').innerHTML = h;
+        const mv = document.getElementById('mv');
+        mv.innerHTML = h;
+        mv.scrollTop = 0;
     }
 
     async function saveNote(id, val) {
