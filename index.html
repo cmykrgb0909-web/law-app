@@ -3,69 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學習式六法 - 雲端加強版</title>
+    <title>學習式六法 - 筆記同步版</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
-        :root { --red: #8b1a1a; --bg: #f5f0e8; --border: #c8bfb0; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .hdr { background: var(--red); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        :root { --red: #8b1a1a; --bg: #f5f0e8; --border: #c8bfb0; --gold: #b8860b; }
+        body { font-family: 'Noto Sans TC', sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .hdr { background: var(--red); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         .layout { display: flex; flex: 1; overflow: hidden; }
-        .sb { width: 250px; background: #ede7d9; border-right: 1px solid var(--border); overflow-y: auto; padding: 10px; }
-        .main { flex: 1; overflow-y: auto; padding: 20px; }
-        .hbtn { background: white; color: var(--red); border: 1px solid white; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-weight: bold; margin-left: 8px; }
-        .art-card { background: white; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; line-height: 1.8; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .art-num { color: var(--red); font-weight: bold; font-size: 1.1em; border-bottom: 1px solid #eee; display: block; margin-bottom: 8px; }
-        .sb-item { padding: 10px; background: white; margin-bottom: 8px; border-radius: 4px; cursor: pointer; border: 1px solid var(--border); }
-        #loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; font-weight: bold; color: var(--red); }
+        .sb { width: 240px; background: #ede7d9; border-right: 1px solid var(--border); overflow-y: auto; padding: 10px; }
+        .main { flex: 1; overflow-y: auto; padding: 30px; background: var(--bg); }
+        .hbtn { background: white; color: var(--red); border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-weight: bold; margin-left: 8px; }
+        .art-card { background: white; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .art-num { color: var(--red); font-weight: bold; font-size: 1.2em; display: block; margin-bottom: 10px; border-bottom: 2px solid var(--bg); padding-bottom: 5px; }
+        .note-area { margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 10px; }
+        .note-input { width: 100%; min-height: 60px; border: 1px solid #ddd; border-radius: 4px; padding: 8px; font-size: 14px; background: #fff9f0; }
+        .sb-item { padding: 12px; background: white; margin-bottom: 10px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); transition: 0.2s; }
+        .sb-item:hover { transform: translateX(5px); border-color: var(--red); }
+        #loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; z-index: 999; }
     </style>
 </head>
 <body>
 
-<div id="loading">讀取中，請稍候...</div>
+<div id="loading">處理中...</div>
 
 <div class="hdr">
-    <div style="font-size: 20px; font-weight: bold; letter-spacing: 1px;">學習式六法</div>
+    <b>學習式六法</b>
     <div>
-        <button class="hbtn" onclick="document.getElementById('fi').click()">匯入 RTF</button>
+        <button class="hbtn" onclick="document.getElementById('fi').click()">匯入法規</button>
         <input type="file" id="fi" style="display:none" onchange="handleFile(event)">
         <span id="user-ui"><button class="hbtn" onclick="doLogin()">Google 登入</button></span>
     </div>
 </div>
 
 <div class="layout">
-    <div class="sb" id="sbl">請匯入法規檔案</div>
+    <div class="sb" id="sbl">請先匯入 RTF 檔案</div>
     <div class="main" id="mv">
-        <div style="text-align:center; color:#888; margin-top:100px;">
-            <h2>歡迎使用雲端版六法</h2>
-            <p>請點擊右上方「匯入 RTF」開始背題</p>
-        </div>
+        <h2 style="text-align:center; color:#999; margin-top:100px;">已準備就緒，請開始學習</h2>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = {
+    const config = {
         apiKey: "AIzaSyCqjGQcn6oTvR0uWQJh_B-B3YY_xqKikpE",
         authDomain: "work-2cc3f.firebaseapp.com",
         projectId: "work-2cc3f",
         appId: "1:550420160355:web:101985cfc89dbc5e573d56"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(config);
     const db = firebase.firestore();
     const auth = firebase.auth();
     let UID = null;
     let LAWS = {};
+    let NOTES = {}; // 存放筆記內容
 
     auth.onAuthStateChanged(user => {
         if (user) {
             UID = user.uid;
-            document.getElementById('user-ui').innerHTML = `<span style="font-size:12px">${user.displayName}</span><button class="hbtn" onclick="auth.signOut()">登出</button>`;
-            loadCloud();
-        } else {
-            UID = null;
-            document.getElementById('user-ui').innerHTML = `<button class="hbtn" onclick="doLogin()">Google 登入</button>`;
+            document.getElementById('user-ui').innerHTML = `<small>${user.displayName}</small> <button class="hbtn" onclick="auth.signOut()">登出</button>`;
+            loadCloudData();
         }
     });
 
@@ -73,37 +71,29 @@
         auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
     }
 
-    async function handleFile(e) {
+    // 強化版解析器：解決亂碼與格式問題
+    function handleFile(e) {
         const file = e.target.files[0];
         if (!file) return;
         document.getElementById('loading').style.display = 'flex';
-
+        
         const reader = new FileReader();
         reader.onload = async (ev) => {
-            let raw = ev.target.result;
-            // 強化版 RTF 解析邏輯，優先處理 Unicode
-            let txt = raw.replace(/\\u(-?\d+)\??/g, (_, n) => {
-                let c = parseInt(n);
-                return String.fromCharCode(c < 0 ? c + 65536 : c);
-            });
-            // 移除 RTF 標籤並處理換行
-            txt = txt.replace(/\\par|\\line/g, '\n')
-                     .replace(/\\[a-z0-9]+ ?/g, '')
-                     .replace(/[{}\\]/g, '');
-
+            let txt = ev.target.result;
+            // 處理 RTF Unicode 亂碼
+            txt = txt.replace(/\\u(-?\d+)\??/g, (_, n) => String.fromCharCode(parseInt(n) < 0 ? parseInt(n) + 65536 : n));
+            // 清除 RTF 格式與標籤
+            txt = txt.replace(/\\par|\\line/g, '\n').replace(/\\[a-z0-9]+ ?/g, '').replace(/[{}\\]/g, '');
+            
             const lawName = file.name.replace(/\.[^.]+$/, '');
             const articles = [];
-            
-            // 逐行掃描，解決內容消失的問題
-            const lines = txt.split('\n');
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                const m = trimmed.match(/^第\s*(\d[\d-]*(?:之[一二三四五六七八九十百千\d]+)?)\s*條\s*(.*)?/);
+            txt.split('\n').forEach(line => {
+                const ln = line.trim();
+                const m = ln.match(/^第\s*(\d[\d-]*(?:之[一二三四五六七八九十百千\d]+)?)\s*條\s*(.*)?/);
                 if (m) {
-                    articles.push({ num: m[1], content: m[2] || "內容載入中..." });
-                } else if (articles.length > 0 && trimmed.length > 0) {
-                    // 如果這行不是條號，就併入上一條的內容
-                    articles[articles.length - 1].content += " " + trimmed;
+                    articles.push({ num: m[1], content: m[2] || "" });
+                } else if (articles.length > 0 && ln.length > 0) {
+                    articles[articles.length - 1].content += ln;
                 }
             });
 
@@ -114,28 +104,47 @@
             showLaw(lawName);
             document.getElementById('loading').style.display = 'none';
         };
-        // 嘗試使用 Big5 兼容模式讀取 (latin1 有助於保留 RTF 原始字元)
         reader.readAsText(file, 'latin1');
     }
 
     function renderSB() {
-        const sbl = document.getElementById('sbl');
-        sbl.innerHTML = Object.keys(LAWS).map(k => `<div class="sb-item" onclick="showLaw('${k}')">📂 ${k}</div>`).join('');
+        document.getElementById('sbl').innerHTML = Object.keys(LAWS).map(k => `<div class="sb-item" onclick="showLaw('${k}')">📂 ${k}</div>`).join('');
     }
 
     function showLaw(name) {
         const law = LAWS[name];
-        let h = `<h1 style="color:var(--red); border-bottom:2px solid var(--red); padding-bottom:10px;">${law.name}</h1>`;
+        let h = `<h2 style="color:var(--red); border-bottom:2px solid var(--red);">${law.name}</h2>`;
         law.articles.forEach(a => {
-            h += `<div class="art-card"><span class="art-num">第 ${a.num} 條</span>${a.content}</div>`;
+            const noteId = `${name}_${a.num}`;
+            const noteVal = NOTES[noteId] || "";
+            h += `
+                <div class="art-card">
+                    <span class="art-num">第 ${a.num} 條</span>
+                    <div class="art-content">${a.content}</div>
+                    <div class="note-area">
+                        <small style="color:var(--gold)">我的筆記：</small>
+                        <textarea class="note-input" placeholder="點擊輸入筆記..." onblur="saveNote('${noteId}', this.value)">${noteVal}</textarea>
+                    </div>
+                </div>`;
         });
         document.getElementById('mv').innerHTML = h;
-        document.getElementById('mv').scrollTop = 0;
     }
 
-    async function loadCloud() {
-        const snap = await db.collection('users').doc(UID).collection('laws').get();
-        snap.forEach(doc => LAWS[doc.id] = doc.data());
+    async function saveNote(id, val) {
+        NOTES[id] = val;
+        if (UID) {
+            await db.collection('users').doc(UID).collection('notes').doc(id).set({ content: val });
+            console.log("筆記已自動儲存");
+        }
+    }
+
+    async function loadCloudData() {
+        // 載入法規
+        const lawSnap = await db.collection('users').doc(UID).collection('laws').get();
+        lawSnap.forEach(doc => LAWS[doc.id] = doc.data());
+        // 載入筆記
+        const noteSnap = await db.collection('users').doc(UID).collection('notes').get();
+        noteSnap.forEach(doc => NOTES[doc.id] = doc.data().content);
         renderSB();
     }
 </script>
