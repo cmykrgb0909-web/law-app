@@ -1,297 +1,261 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>學習式六法 - 備考專用折疊版</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學習式六法 - 備考雲端同步版</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&display=swap');
+        :root{
+            --red:#8b1a1a; --bg:#f5f0e8; --bg2:#ede7d9; --border:#c8bfb0; --gold:#b8860b;
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Noto Sans TC',sans-serif;font-size:13pt;background:var(--bg);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-:root{
-  --bg:#f5f0e8;--bg2:#ede7d9;--bg3:#e2dace;
-  --ink:#1a1410;--ink2:#4a3f35;--ink3:#7a6e63;
-  --red:#8b1a1a;--red2:#b83232;
-  --gold:#b8860b;--green:#2d6a4f;--blue:#1a3a5c;
-  --border:#c8bfb0;--shadow:rgba(26,20,16,.12);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans TC','微軟正黑體',sans-serif;font-size:13pt;background:var(--bg);color:var(--ink);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+        /* Header */
+        .hdr{background:var(--red);color:#fff;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:200}
+        .hdr-title{font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700;letter-spacing:2px}
+        .hbtn{padding:5px 12px;border-radius:3px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:13px;cursor:pointer;margin-left:5px}
+        .hbtn-ul{background:#fff;color:var(--red);font-weight:bold}
 
-/* Header */
-.hdr{background:var(--red);color:#fff;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;z-index:200}
-.hdr-title{font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700;letter-spacing:4px;display:flex;align-items:center;gap:8px}
-.seal{width:30px;height:30px;border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:11px}
-.hdr-btns{display:flex;gap:6px;align-items:center}
-.hbtn{padding:5px 13px;border-radius:2px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
-.hbtn:hover{background:rgba(255,255,255,.22)}
-.hbtn-ul{background:rgba(255,255,255,.9);color:var(--red);border-color:transparent;font-weight:500}
+        /* Layout */
+        .layout{display:flex;flex:1;overflow:hidden}
+        .sb{width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column}
+        .sb-list{flex:1;overflow-y:auto;padding:10px}
+        .sb-itm{padding:10px;background:#fff;margin-bottom:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:14px}
+        .sb-itm:hover{border-color:var(--red)}
 
-/* Layout */
-.layout{display:flex;flex:1;overflow:hidden}
-.sb{width:265px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.sb-srch{padding:8px 10px;border-bottom:1px solid var(--border)}
-.sb-srch input{width:100%;padding:7px 10px;border:1px solid var(--border);background:var(--bg);border-radius:2px;font-size:13pt;outline:none}
-.sb-list{flex:1;overflow-y:auto;padding:4px 0}
-.sb-itm{padding:10px 15px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;transition:.12s;display:flex;justify-content:space-between;align-items:center}
-.sb-itm:hover{background:var(--bg3)}
-.sb-del{color:var(--ink3);font-size:12px;padding:2px 5px}
-.sb-del:hover{color:var(--red)}
+        .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#fffdfa}
+        
+        /* 修正解析中卡住的進度條 */
+        #loader { position:fixed; inset:0; background:rgba(255,255,255,0.9); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:1000; }
+        .p-bar-wrap { width:200px; height:6px; background:#ddd; border-radius:3px; margin-top:15px; overflow:hidden; }
+        #p-bar { width:0%; height:100%; background:var(--red); transition:0.3s; }
 
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:#fffdfa}
-.prog{display:none;padding:10px 20px;background:#eef6f3;border-bottom:1px solid var(--green);font-size:13px;color:var(--green);align-items:center;gap:10px}
-.prog.on{display:flex}
-.prog-tr{flex:1;height:4px;background:#ddd;border-radius:2px}
-.prog-bar{height:4px;background:var(--green);width:0;transition:0.3s}
+        .content{flex:1;overflow-y:auto;padding:20px 30px}
+        
+        /* 法條結構樣式 */
+        .blk{margin-bottom:8px}
+        .bhdr{display:flex;align-items:center;gap:8px;padding:12px;background:rgba(0,0,0,0.03);cursor:pointer;border-radius:4px;font-weight:bold;color:var(--red)}
+        .bbdy{padding-left:15px;display:block} /* 預設展開 */
+        .btog{transition:0.2s; font-size:10px}
+        .btog.closed{transform:rotate(-90deg)}
 
-.lhdr{padding:15px 20px;background:var(--bg);border-bottom:1px solid var(--border)}
-.lname{font-family:'Noto Serif TC',serif;font-size:22px;font-weight:700;color:var(--red)}
-.tb{padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-.tbtn{padding:5px 10px;border:1px solid var(--border);background:var(--bg);border-radius:2px;font-size:12px;cursor:pointer}
-.tbtn:hover{background:var(--red);color:#fff}
-.tsep{width:1px;height:16px;background:var(--border);margin:0 5px}
-
-.content{flex:1;overflow-y:auto;padding:20px}
-
-/* 折疊區塊樣式 */
-.blk{margin-bottom:5px}
-.bhdr{display:flex;align-items:center;gap:8px;padding:10px;cursor:pointer;border-radius:4px;background:rgba(0,0,0,0.03)}
-.btog{transition:transform .2s;font-size:10px}
-.btog.open{transform:rotate(90deg)}
-.blbl{font-weight:700;color:var(--red);min-width:60px}
-.bbdy{padding-left:15px;margin-top:5px}
-
-/* 條文樣式 */
-.art{margin-bottom:8px;border:1px solid var(--border);border-radius:4px;background:#fff}
-.art-hdr{padding:8px 12px;background:rgba(139,26,26,0.02);display:flex;align-items:center;gap:10px;cursor:pointer}
-.art-body{padding:15px;line-height:2;white-space:pre-wrap}
-.anum{color:var(--red);font-weight:bold;font-family:'JetBrains Mono'}
-.anote{margin-top:10px;padding:10px;background:#fff9e6;border-left:3px solid var(--gold);font-size:14px}
-
-/* 螢光筆顏色 */
-.hy{background:#ffe066} .hg{background:#b7f0b7} .hp{background:#e8b4f8}
-
-/* Welcome Area */
-.welcome{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;color:var(--ink3)}
-</style>
+        .art{margin-bottom:12px;border:1px solid var(--border);border-radius:6px;background:#fff;overflow:hidden}
+        .art-hdr{padding:10px 15px;background:rgba(139,26,26,0.03);cursor:pointer;display:flex;justify-content:space-between}
+        .art-body{padding:15px 20px;line-height:2.2;font-size:17px;color:#222}
+        .anum{color:var(--red);font-weight:bold}
+        
+        /* 筆記區 */
+        .note-box{margin-top:15px;background:#fff9e6;border:1px solid #e6d0a0;padding:12px;border-radius:4px}
+        .note-input{width:100%;min-height:80px;border:none;background:transparent;outline:none;font-size:15px;line-height:1.6;resize:vertical}
+    </style>
 </head>
 <body>
 
+<div id="loader">
+    <div id="l-msg" style="font-weight:bold;color:var(--red)">正在優化法規排版...</div>
+    <div class="p-bar-wrap"><div id="p-bar"></div></div>
+</div>
+
 <div class="hdr">
-  <div class="hdr-title"><div class="seal">法</div>學習式六法</div>
-  <div class="hdr-btns">
-    <button class="hbtn hbtn-ul" onclick="document.getElementById('fi').click()">＋ 匯入 RTF</button>
-    <input type="file" id="fi" accept=".rtf,.txt" style="display:none" onchange="handleUpload(event)">
-    <button class="hbtn" onclick="exportNotes()">匯出備份</button>
-  </div>
+    <div class="hdr-title">學習式六法 <small id="sync-st" style="font-size:10px;opacity:0.7">(離線模式)</small></div>
+    <div>
+        <button class="hbtn hbtn-ul" onclick="document.getElementById('fi').click()">匯入 RTF</button>
+        <input type="file" id="fi" accept=".rtf" style="display:none" onchange="handleFile(event)">
+        <span id="user-ui"><button class="hbtn" onclick="doLogin()">Google 登入</button></span>
+    </div>
 </div>
 
 <div class="layout">
-  <div class="sb">
-    <div class="sb-srch"><input id="sq" placeholder="搜尋已匯入法規..." oninput="renderSB(this.value)"></div>
-    <div class="sb-list" id="sbl"></div>
-  </div>
-
-  <div class="main">
-    <div class="prog" id="prog">
-      <span id="ptxt">解析中...</span>
-      <div class="prog-tr"><div class="prog-bar" id="pbar"></div></div>
+    <div class="sb">
+        <div style="padding:10px"><input type="text" id="sq" placeholder="搜尋法規..." style="width:100%;padding:5px"></div>
+        <div class="sb-list" id="sbl"></div>
     </div>
-    <div id="mv" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-        <div class="welcome">
-            <h2>尚未載入法規</h2>
-            <p>請點擊右上方按鈕匯入考試用 RTF 檔</p>
+    <div class="main">
+        <div id="toolbar" style="padding:10px; border-bottom:1px solid var(--border); display:none">
+            <button class="hbtn" style="color:#333" onclick="expAll(true)">全部展開</button>
+            <button class="hbtn" style="color:#333" onclick="expAll(false)">全部收合</button>
+        </div>
+        <div class="content" id="mv">
+            <div style="text-align:center;margin-top:100px;color:#999">請匯入 RTF 檔案以開始</div>
         </div>
     </div>
-  </div>
 </div>
 
 <script>
-'use strict';
-
-// 儲存邏輯 (純 LocalStorage)
-const LS_KEY_PREFIX = 'lx4_law:';
-const NOTES = JSON.parse(localStorage.getItem('lx4_notes') || '{}');
-
-function saveNote(key, val) {
-    NOTES[key] = val;
-    localStorage.setItem('lx4_notes', JSON.stringify(NOTES));
-}
-
-// RTF 解析器核心
-function stripRTF(raw) {
-    let s = raw;
-    s = s.replace(/\\u(-?\d+)\??/g, (_, n) => {
-        let code = parseInt(n, 10);
-        if (code < 0) code += 65536;
-        return String.fromCharCode(code);
-    });
-    s = s.replace(/\\par\b/g, '\n').replace(/\\line\b/g, '\n');
-    s = s.replace(/\\[a-z0-9-]+ ?/g, '').replace(/[{}\\]/g, '');
-    return s.trim();
-}
-
-function buildTree(text, fname) {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    const root = [];
-    let curLaw = fname;
-    let p0 = null;
-
-    lines.forEach(ln => {
-        let m;
-        if (m = ln.match(/^第([一二三四五六七八九十百]+)編\s*(.*)/)) {
-            p0 = { label: m[0], title: m[2], children: [], articles: [], depth: 0 };
-            root.push(p0);
-        } else if (m = ln.match(/^第\s*(\d+)\s*條\s*(.*)/)) {
-            const art = { num: m[1], text: m[2] };
-            if (p0) p0.articles.push(art);
-            else {
-                if (!root[0]) root.push({ label: '全文', articles: [], children: [], depth: 0 });
-                root[0].articles.push(art);
-            }
-        }
-    });
-    return { name: curLaw, structure: root };
-}
-
-// 畫面渲染核心
-function renderLaw(law) {
-    const mv = document.getElementById('mv');
-    let h = `
-    <div class="lhdr"><div class="lname">${law.name}</div></div>
-    <div class="tb">
-        <button class="tbtn" onclick="expDepth(0)">僅看編目</button>
-        <button class="tbtn" onclick="expDepth(3)">展開全條文</button>
-        <div class="tsep"></div>
-        <button class="tbtn" onclick="collapseAll()">全部收合</button>
-    </div>
-    <div class="content" id="ct">`;
-    
-    law.structure.forEach((nd, i) => {
-        h += renderNode(nd, `nd-${i}`, 0);
-    });
-    
-    h += '</div>';
-    mv.innerHTML = h;
-}
-
-function renderNode(nd, id, d) {
-    let h = `<div class="blk" data-dlv="${d}">
-        <div class="bhdr" onclick="togBlk('${id}')">
-            <span class="btog open" id="tog-${id}">▶</span>
-            <span class="blbl">${nd.label}</span>
-            <span>${nd.title || ''}</span>
-        </div>
-        <div class="bbdy" id="bd-${id}">`;
-    
-    nd.articles.forEach(a => {
-        h += `
-        <div class="art">
-            <div class="art-hdr" onclick="togArt('art-${id}-${a.num}')">
-                <span class="anum">第 ${a.num} 條</span>
-            </div>
-            <div class="art-body" id="art-${id}-${a.num}">
-                ${a.text}
-                <div class="anote" contenteditable="true" onblur="saveNote('${law.name}-${a.num}', this.innerText)">
-                    ${NOTES[`${law.name}-${a.num}`] || '點此新增筆記...'}
-                </div>
-            </div>
-        </div>`;
-    });
-    
-    h += `</div></div>`;
-    return h;
-}
-
-// 功能控制
-function togBlk(id) {
-    const el = document.getElementById('bd-' + id);
-    const tg = document.getElementById('tog-' + id);
-    const isHidden = el.style.display === 'none';
-    el.style.display = isHidden ? '' : 'none';
-    tg.classList.toggle('open', isHidden);
-}
-
-function togArt(id) {
-    const el = document.getElementById(id);
-    el.style.display = el.style.display === 'none' ? '' : 'none';
-}
-
-function expDepth(depth) {
-    document.querySelectorAll('.blk').forEach(b => {
-        const dlv = parseInt(b.dataset.dlv);
-        const bd = b.querySelector('.bbdy');
-        bd.style.display = dlv <= depth ? '' : 'none';
-    });
-}
-
-function collapseAll() {
-    document.querySelectorAll('.bbdy, .art-body').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.btog').forEach(el => el.classList.remove('open'));
-}
-
-// 檔案上傳處理
-function handleUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const rd = new FileReader();
-    const prog = document.getElementById('prog');
-    const bar = document.getElementById('pbar');
-    
-    prog.classList.add('on');
-    bar.style.width = '30%';
-
-    rd.onload = (ev) => {
-        const text = stripRTF(ev.target.result);
-        bar.style.width = '70%';
-        const law = buildTree(text, file.name.replace('.rtf',''));
-        
-        localStorage.setItem(LS_KEY_PREFIX + law.name, JSON.stringify(law));
-        renderLaw(law);
-        renderSB();
-        
-        bar.style.width = '100%';
-        setTimeout(() => prog.classList.remove('on'), 1000);
+    // 1. Firebase 初始化
+    const config = {
+        apiKey: "AIzaSyCqjGQcn6oTvR0uWQJh_B-B3YY_xqKikpE",
+        authDomain: "work-2cc3f.firebaseapp.com",
+        projectId: "work-2cc3f",
+        appId: "1:550420160355:web:101985cfc89dbc5e573d56"
     };
-    rd.readAsText(file, 'latin1');
-}
+    firebase.initializeApp(config);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let UID = null, LAWS = {}, NOTES = {};
 
-function renderSB(filter = '') {
-    const list = document.getElementById('sbl');
-    list.innerHTML = '';
-    for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k.startsWith(LS_KEY_PREFIX)) {
-            const lawName = k.replace(LS_KEY_PREFIX, '');
-            if (lawName.includes(filter)) {
-                const div = document.createElement('div');
-                div.className = 'sb-itm';
-                div.innerHTML = `<span>${lawName}</span><span class="sb-del" onclick="deleteLaw('${lawName}')">刪除</span>`;
-                div.onclick = () => renderLaw(JSON.parse(localStorage.getItem(k)));
-                list.appendChild(div);
+    // 2. 登入與同步邏輯
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            UID = user.uid;
+            document.getElementById('sync-st').innerText = "(雲端同步中)";
+            document.getElementById('user-ui').innerHTML = `<small>${user.displayName}</small> <button class="hbtn" onclick="auth.signOut()">登出</button>`;
+            loadCloud();
+        } else {
+            UID = null;
+            document.getElementById('sync-st').innerText = "(離線模式)";
+            document.getElementById('user-ui').innerHTML = `<button class="hbtn" onclick="doLogin()">Google 登入</button>`;
+        }
+    });
+
+    function doLogin() { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
+
+    // 3. RTF 解析邏輯 (修正卡住問題)
+    async function handleFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const loader = document.getElementById('loader');
+        const pbar = document.getElementById('p-bar');
+        loader.style.display = 'flex';
+        pbar.style.width = '20%';
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                let t = ev.target.result;
+                pbar.style.width = '50%';
+
+                // 清洗 RTF 標籤
+                t = t.replace(/\\u(-?\d+)\??/g, (_, n) => String.fromCharCode(parseInt(n) < 0 ? parseInt(n)+65536 : n))
+                     .replace(/\\par|\\line/g, '\n')
+                     .replace(/\\[a-z0-9-]+ ?/g, '')
+                     .replace(/[{}\\]/g, '');
+
+                const name = file.name.replace('.rtf','');
+                const structure = [];
+                let currentNode = { label: "全文", articles: [] };
+                
+                // 解析編章節與條文
+                const lines = t.split('\n');
+                lines.forEach(line => {
+                    const ln = line.trim();
+                    if (!ln) return;
+
+                    const mArt = ln.match(/^第\s*(\d+)\s*條\s*(.*)/);
+                    const mBlk = ln.match(/^第([一二三四五六七八九十百]+)([編章節])\s*(.*)/);
+
+                    if (mBlk) {
+                        if (currentNode.articles.length > 0 || currentNode.label !== "全文") {
+                            structure.push(currentNode);
+                        }
+                        currentNode = { label: mBlk[1]+mBlk[2], title: mBlk[3], articles: [] };
+                    } else if (mArt) {
+                        currentNode.articles.push({ n: mArt[1], c: mArt[2] });
+                    } else if (currentNode.articles.length > 0) {
+                        currentNode.articles[currentNode.articles.length-1].c += '\n' + ln;
+                    }
+                });
+                structure.push(currentNode);
+
+                LAWS[name] = { name, structure };
+                if (UID) await db.collection('users').doc(UID).collection('laws').doc(name).set(LAWS[name]);
+                
+                renderSB();
+                showLaw(name);
+            } catch (err) {
+                console.error(err);
+                alert("解析失敗，請確認檔案格式是否正確。");
+            } finally {
+                loader.style.display = 'none';
+                pbar.style.width = '0%';
             }
+        };
+        reader.readAsText(file, 'latin1');
+    }
+
+    // 4. 介面渲染
+    function renderSB() {
+        const list = document.getElementById('sbl');
+        list.innerHTML = Object.keys(LAWS).map(k => `<div class="sb-itm" onclick="showLaw('${k}')">📂 ${k}</div>`).join('');
+    }
+
+    function showLaw(name) {
+        const law = LAWS[name];
+        document.getElementById('toolbar').style.display = 'block';
+        let h = `<h2 style="text-align:center; color:var(--red); margin-bottom:30px;">${law.name}</h2>`;
+        
+        law.structure.forEach((blk, idx) => {
+            h += `
+            <div class="blk">
+                <div class="bhdr" onclick="togBlk('blk-${idx}')">
+                    <span class="btog" id="tog-blk-${idx}">▼</span> ${blk.label} ${blk.title || ''}
+                </div>
+                <div class="bbdy" id="blk-${idx}">`;
+            
+            blk.articles.forEach(art => {
+                const nid = `${name}_${art.n}`;
+                h += `
+                <div class="art">
+                    <div class="art-hdr" onclick="togArt('art-${nid}')">
+                        <span class="anum">第 ${art.n} 條</span>
+                    </div>
+                    <div class="art-body" id="art-${nid}">
+                        <div style="white-space:pre-wrap">${art.c}</div>
+                        <div class="note-box">
+                            <div style="font-size:12px; color:var(--gold); font-weight:bold; margin-bottom:5px;">學習筆記：</div>
+                            <textarea class="note-input" placeholder="輸入筆記..." onblur="saveNote('${nid}', this.value)">${NOTES[nid] || ""}</textarea>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            h += `</div></div>`;
+        });
+        document.getElementById('mv').innerHTML = h;
+        document.getElementById('mv').scrollTop = 0;
+    }
+
+    // 5. 功能控制與同步
+    function togBlk(id) {
+        const el = document.getElementById(id);
+        const tog = document.getElementById('tog-'+id);
+        const isHidden = el.style.display === 'none';
+        el.style.display = isHidden ? 'block' : 'none';
+        tog.classList.toggle('closed', !isHidden);
+    }
+
+    function togArt(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function expAll(isExp) {
+        document.querySelectorAll('.bbdy, .art-body').forEach(el => el.style.display = isExp ? 'block' : 'none');
+        document.querySelectorAll('.btog').forEach(el => el.classList.toggle('closed', !isExp));
+    }
+
+    async function saveNote(id, val) {
+        NOTES[id] = val;
+        if (UID) {
+            await db.collection('users').doc(UID).collection('notes').doc(id).set({ c: val });
+            console.log("筆記已同步至雲端");
+        } else {
+            localStorage.setItem('lx4_notes', JSON.stringify(NOTES));
         }
     }
-}
 
-function deleteLaw(name) {
-    if(confirm('確定刪除？')) {
-        localStorage.removeItem(LS_KEY_PREFIX + name);
+    async function loadCloud() {
+        const lSnap = await db.collection('users').doc(UID).collection('laws').get();
+        lSnap.forEach(d => LAWS[d.id] = d.data());
+        const nSnap = await db.collection('users').doc(UID).collection('notes').get();
+        nSnap.forEach(d => NOTES[d.id] = d.data().c);
         renderSB();
-        location.reload();
     }
-}
-
-function exportNotes() {
-    const data = JSON.stringify(NOTES);
-    const blob = new Blob([data], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'backup_notes.json';
-    a.click();
-}
-
-renderSB();
 </script>
 </body>
 </html>
