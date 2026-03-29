@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>學習式六法 雲端版</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <style>
+    :root { --red: #8b1a1a; --bg: #f5f0e8; --border: #c8bfb0; }
+    body { font-family: sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    
+    /* 頂部導覽 */
+    .hdr { background: var(--red); color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+    .hdr b { font-size: 18px; }
+    .btn-group { display: flex; gap: 8px; }
+    .hbtn { background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-size: 13px; }
+    
+    /* 主版面 */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+    .sb { width: 250px; background: #ede7d9; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .main { flex: 1; overflow-y: auto; padding: 20px; background: var(--bg); }
+    
+    /* 列表與卡片 */
+    .sb-item { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .sb-item:hover { background: #e2dace; }
+    .art-card { background: white; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); line-height: 1.7; }
+    .art-num { color: var(--red); font-weight: bold; margin-bottom: 5px; display: block; }
+    
+    #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid var(--red); z-index: 100; display: none; }
+  </style>
+</head>
+<body>
+
+<div id="loading">正在處理，請稍候...</div>
+
+<div class="hdr">
+  <b>學習式六法 雲端版</b>
+  <div class="btn-group">
+    <button class="hbtn" onclick="document.getElementById('fi').click()">匯入 RTF</button>
+    <input type="file" id="fi" accept=".rtf,.txt" style="display:none" onchange="handleUpload(event)">
+    <div id="user-ui"><button class="hbtn" onclick="login()">Google 登入</button></div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sb">
+    <div style="padding:10px; border-bottom:1px solid var(--border)">
+      <input type="text" id="sq" placeholder="搜尋法規..." style="width:100%" oninput="renderSB()">
+    </div>
+    <div id="sbl" class="sb-list"></div>
+  </div>
+  <div class="main" id="mv">
+    <div style="text-align:center; margin-top:50px; color:#666;">
+      <h3>歡迎使用</h3>
+      <p>請點擊「匯入 RTF」或「Google 登入」以開始。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 1. Firebase 初始化 (確認 ID 是 work-2cc3f)
+  const config = {
+    apiKey: "AIzaSyCqjGQcn6oTvR0uWQJh_B-B3YY_xqKikpE",
+    authDomain: "work-2cc3f.firebaseapp.com",
+    projectId: "work-2cc3f",
+    storageBucket: "work-2cc3f.firebasestorage.app",
+    messagingSenderId: "550420160355",
+    appId: "1:550420160355:web:101985cfc89dbc5e573d56"
+  };
+  
+  if (!firebase.apps.length) {
+    firebase.initializeApp(config);
+  }
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  let USER_ID = null;
+  let LAWS = {};
+
+  // 2. 登入狀態
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      USER_ID = user.uid;
+      document.getElementById('user-ui').innerHTML = `<span style="font-size:12px">${user.displayName}</span> <button class="hbtn" onclick="auth.signOut()">登出</button>`;
+      loadCloud();
+    } else {
+      USER_ID = null;
+      document.getElementById('user-ui').innerHTML = `<button class="hbtn" onclick="login()">Google 登入</button>`;
+    }
+  });
+
+  function login() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithRedirect(provider);
+  }
+
+  // 3. RTF 解析
+  function handleUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    document.getElementById('loading').style.display = 'block';
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const text = ev.target.result;
+      const clean = text.replace(/\\u(-?\d+)\??/g, (_, n) => String.fromCharCode(n < 0 ? parseInt(n)+65536 : n))
+                        .replace(/\\par|\\line/g, '\n').replace(/\\[a-z0-9]+ ?/g, '').replace(/[{}\\]/g, '');
+      
+      const lawName = file.name.replace(/\.[^.]+$/, '');
+      const articles = [];
+      clean.split('\n').forEach(ln => {
+        const m = ln.trim().match(/^第\s*(\d[\d-]*(?:之[一二三四五六七八九十百千\d]+)?)\s*條\s*(.*)?/);
+        if (m) articles.push({ num: m[1], content: m[2] || "" });
+      });
+
+      LAWS[lawName] = { name: lawName, articles: articles };
+      if (USER_ID) await db.collection('users').doc(USER_ID).collection('laws').doc(lawName).set(LAWS[lawName]);
+      
+      document.getElementById('loading').style.display = 'none';
+      renderSB();
+      showLaw(lawName);
+    };
+    reader.readAsText(file, 'latin1');
+  }
+
+  function renderSB() {
+    const sbl = document.getElementById('sbl');
+    sbl.innerHTML = Object.keys(LAWS).map(k => `<div class="sb-item" onclick="showLaw('${k}')">📂 ${k}</div>`).join('');
+  }
+
+  function showLaw(name) {
+    const law = LAWS[name];
+    const mv = document.getElementById('mv');
+    let h = `<h2 style="color:var(--red)">${law.name}</h2>`;
+    law.articles.forEach(a => {
+      h += `<div class="art-card"><b class="art-num">第 ${a.num} 條</b>${a.content}</div>`;
+    });
+    mv.innerHTML = h;
+    mv.scrollTop = 0;
+  }
+
+  async function loadCloud() {
+    const snap = await db.collection('users').doc(USER_ID).collection('laws').get();
+    snap.forEach(doc => LAWS[doc.id] = doc.data());
+    renderSB();
+  }
+</script>
+
+</body>
+</html>
